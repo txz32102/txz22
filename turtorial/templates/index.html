@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../static/style.css">
+    <title>画图板</title>
+    <style>
+        canvas{
+        background-color:rgb(0, 0, 0);
+        }
+        </style>
+</head>
+ 
+<body>
+    <div style="width:100px;margin:100px auto;">
+        <input type="color" value="#FFFFFF" id="color">
+        <select name="" id="line-width">
+            <option value="30">30px</option>
+            <option value="2">2px</option>
+            <option value="1">--请选择线条粗细（像素）--</option>
+            <option value="3">3px</option>
+            <option value="5">5px</option>
+            <option value="8">8px</option>
+            <option value="12">12px</option>
+            <option value="15">15px</option>
+        </select>
+        <input type="button" value="清除画布" id="btnClear">
+        <input type="button" value="保存" id="save">
+        <input type="button" value="返回上一步" id="return">
+        
+        <canvas id="canvas" width="300" height="300" style="display: block;border: 3px rgb(0, 0, 0) solid;margin-top: 10px;">
+        </canvas>
+    </div>
+ 
+    <script type="text/javascript">
+        
+
+        //获取画布元素
+        let canvas = document.getElementById("canvas");
+        let context = canvas.getContext("2d");
+ 
+        //将所有像素点信息存储在数组中，后续返回上一步时可用到
+        let restore = [context.getImageData(0, 0, 500, 500)];
+ 
+        //获取画笔颜色
+        let color = document.getElementById("color");
+        //获取画笔宽度
+        let lineWidth = document.getElementById("line-width");
+        let btn = document.getElementById("btnClear");
+        let returnStep = document.getElementById("return");
+        let save = document.getElementById("save");
+        isDraw = false;
+        //绘图
+        //鼠标摁下时
+        canvas.onmousedown = function(event) {
+                isDraw = true;
+ 
+                context.lineWidth = lineWidth.value;
+                context.strokeStyle = color.value;
+                context.lineCap="round";
+                context.shadowColor = "white";
+                context.shadowBlur = 10;
+                context.beginPath();
+                context.moveTo(event.offsetX, event.offsetY);
+            }
+            //鼠标开始移动时绘图
+        canvas.onmousemove = function(event) {
+                if (isDraw) {
+                    context.lineTo(event.offsetX, event.offsetY);
+                    context.stroke();
+                }
+            }
+            //鼠标松开时停止绘图
+        canvas.onmouseup = function() {
+                isDraw = false;
+                //将此时绘制的信息存储到restore数组中
+                restore[restore.length] = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            }
+            //鼠标移出canvas后停止绘图
+        canvas.onmouseout = function() {
+                isDraw = false;
+            }
+            //点击按钮清除画布
+        btn.onclick = function() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                restore[restore.length] = context.getImageData(0, 0, canvas.width, canvas.height);
+            }
+            //返回上一步
+        returnStep.onclick = function() {
+                if (restore.length > 1) {
+                    context.putImageData(restore[restore.length - 2], 0, 0);
+                    restore.length--;
+                }
+            }
+            //保存图片
+        save.onclick = function() {
+            // const ctx = canvas.getContext('2d');
+            // const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            // for (let i = 0; i < imageData.data.length; i += 4) {
+            // // 当该像素是透明的，则设置成白色
+            // if (imageData.data[i + 3] === 0) {
+            //     imageData.data[i] = 0;
+            //     imageData.data[i + 1] = 0;
+            //     imageData.data[i + 2] = 0;
+            //     imageData.data[i + 3] = 0;
+            // }
+            // }
+            // ctx.putImageData(imageData, 0, 0);
+            // dataURL = canvas.toDataURL('image/jpeg');
+
+            let name = prompt("请输入要保存的图片名称", "canvas绘制图片");
+            if (name === "") {
+                alert("图片名字不能为空")
+            } else {
+                let href = canvas.toDataURL('image/jpeg',0);
+                let a = document.createElement('a');
+                a.download = name;
+                a.href = href;
+                a.dispatchEvent(new MouseEvent('click'));
+            }
+            // let name = prompt("请输入要保存的图片名称", "canvas绘制图片");
+            // if (name === "") {
+            //     alert("图片名字不能为空")
+            // } else {
+            //     let href = canvas.toDataURL();
+            //     let a = document.createElement('a');
+            //     a.download = name;
+            //     a.href = href;
+            //     a.dispatchEvent(new MouseEvent('click'));
+            // }
+        }
+    </script>
+        <form action="{{ url_for('predict')}}"method="post">
+            <style>
+                .button {
+                  border: none;
+                  color: white;
+                  padding: 15px 32px;
+                  text-align: center;
+                  text-decoration: none;
+                  display: inline-block;
+                  font-size: 16px;
+                  margin: 4px 2px;
+                  cursor: pointer;
+                }
+                
+                .button1 {background-color: #18161a;} /* Green */
+                .button2 {background-color: #008CBA;} /* Blue */
+            </style>
+        <button class="button button1">Green</button>
+        <!-- <button type="submit" class="btn btn-dark">Predict</button> -->
+        </form>
+        {{ predictionText }}
+</body>
+</html>
