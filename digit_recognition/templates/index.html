@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="chinese">
+ 
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="../static/style.css">
+        <title>*手写数字识别*</title>
+        <style>
+            body{
+                background-image: linear-gradient(120deg, #fdcbf1 0%, #fdcbf1 1%, #e6dee9 100%);
+            }
+            canvas{
+                /* 背景颜色 */
+                background-color:rgb(255, 192, 227);
+                /* 设置边框圆角 */
+                border-radius: 13px;
+            }
+            img{
+                width: 94px;    /*定宽*/
+                height: 35px;
+                margin:0px auto;   /*margin-left 与 margin-right 设置为 auto*/
+            }
+            .button{
+                display:inline_block;
+                padding: 15px 25px;
+                margin-left: 100px;
+                /* 字体大小 */
+                font-size: 24px;
+                cursor: pointer;
+                text-decoration: none;
+                outline:none;
+                /* 字体颜色 */
+                color:#e9afd9;
+                /* 背景颜色 */
+                background-color: #ffffff;
+                /* 边框颜色 */
+                border: 2px solid #e9afd9;
+                /* 设置边框圆角 */
+                border-radius: 20px;
+                box-shadow: 0 9px #999;
+                /* 反应速度 */
+                transition-duration: 0.4s;
+            }
+            /* 按钮悬停效果 */
+            .button:hover{
+                color: #ffffff;
+                background-color: #f3b7e4;
+            }
+            /* 按钮点击效果 */
+            .button:active{
+                /* 字体颜色 */
+                color: #ffffff;
+                border: 2px solid #f3b7e4;
+                background-color: #e9afd9;
+                box-shadow: 0 5px #666;
+                /* 下移 */
+                transform: translateY(4px);
+            }
+            .slidecontainer {
+                width: 100%; 
+            }
+            .slider {
+                -webkit-appearance: none;
+                width: 50%;
+                height: 15px;
+                border-radius: 5px;
+                background-image: linear-gradient();
+                outline: none;
+                opacity: 0.7;
+                -webkit-transition: .2s;
+                transition: opacity .2s;
+            }
+        </style>
+    </head>
+ 
+    <body>
+        <div style="width:300px;margin:60px auto;">
+            <input type="range" min="1" max="30" value="8" class="slider" id="line-width">
+            <p>line-width: <span id="demo"></span>px</p>
+            <img src="download.svg" alt="保存" id="save" title="下载图片" width="35" height="35" left:200px>
+            <img src="bucket.svg" alt="清除画布" id="btnClear" title="清空画板" width="35" height="35">
+            <img src="undo.svg" alt="返回上一步" id="return" title="撤销" width="35" height="35">
+            <!-- <input type="button" value="清除画布" id="btnClear">
+            <input type="button" value="保存" id="save">
+            <input type="button" value="返回上一步" id="return"> -->
+            
+            <canvas id="canvas" width="300" height="300" style="display: block;border: 3px #ffffff solid;margin-top: 10px;">
+            </canvas>
+            {{ predictionText }}
+            <form action="{{ url_for('predict')}}"method="post">
+                <button type="submit" class="button">识别</button>
+            </form>
+
+            
+        </div>
+        <!-- <div class="slidecontainer">
+            
+        </div> -->
+    
+        <script type="text/javascript">
+            //获取画布元素
+            let canvas = document.getElementById("canvas");
+            let context = canvas.getContext("2d");
+    
+            //将所有像素点信息存储在数组中，后续返回上一步时可用到
+            let restore = [context.getImageData(0, 0, 500, 500)];
+    
+            //获取画笔颜色
+            // let color = document.getElementById("color");
+            // let color = "#000000";
+            //获取画笔宽度
+            let lineWidth = document.getElementById("line-width");
+            let btn = document.getElementById("btnClear");
+            let returnStep = document.getElementById("return");
+            let save = document.getElementById("save");
+            isDraw = false;
+
+            //绘图
+            //鼠标摁下时
+            canvas.onmousedown = function(event) {
+                    isDraw = true;
+    
+                    context.lineWidth = lineWidth.value;//画笔粗细
+                    context.strokeStyle = "white";//画笔颜色
+                    context.lineCap="round";//画笔样式
+                    context.shadowColor = "white";//画笔边缘模糊颜色
+                    context.shadowBlur = 8;//画笔边缘模糊宽度
+                    context.beginPath();
+                    context.moveTo(event.offsetX, event.offsetY);
+                }
+                //鼠标开始移动时绘图
+            canvas.onmousemove = function(event) {
+                    if (isDraw) {
+                        context.lineTo(event.offsetX, event.offsetY);
+                        context.stroke();
+                    }
+                }
+                //鼠标松开时停止绘图
+            canvas.onmouseup = function() {
+                    isDraw = false;
+                    //将此时绘制的信息存储到restore数组中
+                    restore[restore.length] = context.getImageData(0, 0, canvas.width, canvas.height);
+                
+                }
+                //鼠标移出canvas后停止绘图
+            canvas.onmouseout = function() {
+                    isDraw = false;
+                }
+            
+            //点击按钮清除画布
+            btn.onclick = function() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                restore[restore.length] = context.getImageData(0, 0, canvas.width, canvas.height);
+                }
+            //返回上一步
+            returnStep.onclick = function() {
+                    if (restore.length > 1) {
+                        context.putImageData(restore[restore.length - 2], 0, 0);
+                        restore.length--;
+                    }
+                }
+            //保存图片
+            save.onclick = function() {
+                let name = prompt("请输入要保存的图片名称", "canvas");
+                if (name === "") {
+                    alert("图片名字不能为空")
+                } else {
+                    let href = canvas.toDataURL('image/jpeg',0);
+                    let a = document.createElement('a');
+                    a.download = name;
+                    a.href = href;
+                    a.dispatchEvent(new MouseEvent('click'));
+                } 
+            }
+        </script>
+        <script>
+            var slider = document.getElementById("line-width");
+            var output = document.getElementById("demo");
+            output.innerHTML = slider.value;
+            
+            slider.oninput = function() {
+              output.innerHTML = this.value;
+            }
+        </script>
+    </body>
+</html>
